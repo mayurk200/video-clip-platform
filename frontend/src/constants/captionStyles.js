@@ -1,0 +1,73 @@
+/**
+ * Caption style presets for the AI Caption System.
+ * Each style defines visual properties for animated word-by-word captions.
+ */
+export const CAPTION_STYLES = {
+  hormozi: {
+    id: "hormozi",
+    name: "Alex Hormozi",
+    description: "Bold uppercase with yellow highlight on active word",
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 42,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    color: "#FFFFFF",
+    activeColor: "#FFD700",
+    strokeColor: "#000000",
+    strokeWidth: 3,
+    position: "center",
+    animation: "scale-pop",
+  },
+  minimal: {
+    id: "minimal",
+    name: "Minimal Clean",
+    description: "Soft lowercase with subtle fade-in per word",
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 32,
+    fontWeight: 500,
+    textTransform: "none",
+    color: "#F1F1F6",
+    activeColor: "#6C3AED",
+    strokeColor: "transparent",
+    strokeWidth: 0,
+    position: "bottom",
+    animation: "fade",
+  },
+  gaming: {
+    id: "gaming",
+    name: "Gaming Neon",
+    description: "Neon glow effect with pulse animation",
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 38,
+    fontWeight: 800,
+    textTransform: "uppercase",
+    color: "#00FF88",
+    activeColor: "#FF00FF",
+    strokeColor: "#000000",
+    strokeWidth: 2,
+    position: "bottom",
+    animation: "neon-pulse",
+  },
+  podcast: {
+    id: "podcast",
+    name: "Podcast Style",
+    description: "Clean serif-like look with underline highlight",
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 34,
+    fontWeight: 600,
+    textTransform: "none",
+    color: "#FFFFFF",
+    activeColor: "#06D6A0",
+    strokeColor: "transparent",
+    strokeWidth: 0,
+    position: "bottom-third",
+    animation: "underline-slide",
+  },
+};
+
+export const CAPTION_POSITIONS = {
+  top: { label: "Top", y: "10%" },
+  center: { label: "Center", y: "45%" },
+  "bottom-third": { label: "Bottom Third", y: "65%" },
+  bottom: { label: "Bottom", y: "85%" },
+};

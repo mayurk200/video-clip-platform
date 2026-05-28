@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Storage
+storage/uploads/*
+storage/processed/*
+storage/clips/*
+storage/thumbnails/*
+!storage/**/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Database
+*.db
+*.sqlite
+
+# Redis
+dump.rdb
+
+# Docker
+docker/data/
+
+# Prisma
+backend/src/prisma/migrations/
+
+# Faster-Whisper models
+python-ai-service/models/

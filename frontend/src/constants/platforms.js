@@ -1,0 +1,75 @@
+/**
+ * Social media platform export configurations.
+ */
+export const PLATFORMS = {
+  tiktok: {
+    id: "tiktok",
+    name: "TikTok",
+    icon: "🎵",
+    aspectRatio: "9:16",
+    width: 1080,
+    height: 1920,
+    maxDuration: 180,
+    recommendedDuration: { min: 15, max: 60 },
+    format: "mp4",
+    codec: "h264",
+    audioBitrate: "128k",
+    videoBitrate: "4M",
+    fps: 30,
+  },
+  instagram_reels: {
+    id: "instagram_reels",
+    name: "Instagram Reels",
+    icon: "📸",
+    aspectRatio: "9:16",
+    width: 1080,
+    height: 1920,
+    maxDuration: 90,
+    recommendedDuration: { min: 15, max: 60 },
+    format: "mp4",
+    codec: "h264",
+    audioBitrate: "128k",
+    videoBitrate: "4M",
+    fps: 30,
+  },
+  youtube_shorts: {
+    id: "youtube_shorts",
+    name: "YouTube Shorts",
+    icon: "▶️",
+    aspectRatio: "9:16",
+    width: 1080,
+    height: 1920,
+    maxDuration: 60,
+    recommendedDuration: { min: 15, max: 58 },
+    format: "mp4",
+    codec: "h264",
+    audioBitrate: "192k",
+    videoBitrate: "5M",
+    fps: 30,
+  },
+  facebook_reels: {
+    id: "facebook_reels",
+    name: "Facebook Reels",
+    icon: "📘",
+    aspectRatio: "9:16",
+    width: 1080,
+    height: 1920,
+    maxDuration: 90,
+    recommendedDuration: { min: 15, max: 60 },
+    format: "mp4",
+    codec: "h264",
+    audioBitrate: "128k",
+    videoBitrate: "4M",
+    fps: 30,
+  },
+};
+
+export const SUPPORTED_VIDEO_FORMATS = [
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/x-matroska",
+];
+
+export const MAX_UPLOAD_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB

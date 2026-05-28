@@ -1,0 +1,32 @@
+# ClipForge AI Service - Python Dependencies
+
+# Core
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+python-multipart==0.0.20
+
+# AI / ML
+faster-whisper==1.1.0
+groq==0.15.0
+mediapipe==0.10.35
+opencv-python-headless==4.10.0.84
+numpy
+
+# Video Processing
+moviepy==2.1.2
+
+# Scene Detection
+scenedetect[opencv]==0.6.5
+
+# Image Processing
+Pillow
+
+# HTTP
+httpx==0.28.1
+aiofiles==24.1.0
+
+# Logging
+loguru==0.7.3

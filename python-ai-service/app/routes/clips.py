@@ -22,6 +22,7 @@ class ClipSpec(BaseModel):
 class GenerateClipsRequest(BaseModel):
     video_path: str
     clips: List[ClipSpec]
+    output_dir: str = None
 
 
 def _cut_one_clip(clip: ClipSpec, video_path: str, output_dir: str) -> dict:
@@ -35,7 +36,7 @@ def _cut_one_clip(clip: ClipSpec, video_path: str, output_dir: str) -> dict:
 def generate_clips(request: GenerateClipsRequest):
     """Cut clips from source video concurrently using stream copy (no re-encoding)."""
     try:
-        output_dir = os.path.join(settings.storage_path, "clips")
+        output_dir = request.output_dir if request.output_dir else os.path.join(settings.storage_path, "clips")
         ensure_dir(output_dir)
 
         results = []

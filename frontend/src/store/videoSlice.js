@@ -35,12 +35,12 @@ const useVideoStore = create((set, get) => ({
   },
 
   /** Upload a new video */
-  uploadVideo: async (file) => {
+  uploadVideo: async (file, desiredClipCount) => {
     set({ isUploading: true, uploadProgress: 0 });
     try {
       const result = await videoService.upload(file, (pct) => {
         set({ uploadProgress: pct });
-      });
+      }, desiredClipCount);
       set({ isUploading: false, uploadProgress: 100 });
       // Refresh video list
       get().fetchVideos();
@@ -52,10 +52,10 @@ const useVideoStore = create((set, get) => ({
   },
 
   /** Copy a local video */
-  uploadLocalVideo: async (localPath) => {
+  uploadLocalVideo: async (localPath, desiredClipCount) => {
     set({ isUploading: true, uploadProgress: 50 });
     try {
-      const result = await videoService.uploadLocal(localPath);
+      const result = await videoService.uploadLocal(localPath, desiredClipCount);
       set({ isUploading: false, uploadProgress: 100 });
       get().fetchVideos();
       return result;

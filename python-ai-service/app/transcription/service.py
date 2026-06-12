@@ -81,7 +81,6 @@ def _transcribe_with_groq(video_path: str) -> TranscriptionResult:
                     model="whisper-large-v3-turbo",
                     response_format="verbose_json",
                     timestamp_granularities=["word", "segment"],
-                    language="en",
                 )
             return _parse_groq_response(response)
         except Exception as e:
@@ -107,7 +106,6 @@ def _transcribe_with_groq(video_path: str) -> TranscriptionResult:
                 model="whisper-large-v3-turbo",
                 response_format="verbose_json",
                 timestamp_granularities=["word", "segment"],
-                language="en",
             )
 
         return _parse_groq_response(response)
@@ -145,6 +143,7 @@ def _transcribe_chunked_groq(video_path: str, full_audio_path: str) -> Transcrip
     all_text_parts = []
     time_offset = 0.0
     chunk_idx = 0
+    detected_language = "en"
 
     while time_offset < total_duration:
         chunk_path = os.path.join(temp_dir, f"chunk_{chunk_idx}.m4a")
@@ -170,13 +169,14 @@ def _transcribe_chunked_groq(video_path: str, full_audio_path: str) -> Transcrip
                     model="whisper-large-v3-turbo",
                     response_format="verbose_json",
                     timestamp_granularities=["word", "segment"],
-                    language="en",
                 )
 
             # Parse and offset timestamps
             chunk_result = _parse_groq_response(response, time_offset=time_offset)
             all_segments.extend(chunk_result.segments)
             all_text_parts.append(chunk_result.full_text)
+            if chunk_idx == 0:
+                detected_language = chunk_result.language
 
         finally:
             try:
@@ -191,7 +191,7 @@ def _transcribe_chunked_groq(video_path: str, full_audio_path: str) -> Transcrip
     return TranscriptionResult(
         full_text=" ".join(all_text_parts),
         segments=all_segments,
-        language="en",
+        language=detected_language,
         language_probability=1.0,
         duration=total_duration,
     )

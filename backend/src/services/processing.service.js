@@ -23,16 +23,20 @@ const processingService = {
   },
 
   /** Analyze transcript for viral moments */
-  async analyzeTranscript(transcript, videoId) {
-    logger.info("Requesting viral analysis", { videoId });
-    const { data } = await aiClient.post("/api/analyze", { transcript, video_id: videoId });
+  async analyzeTranscript(transcript, videoId, desiredClipCount) {
+    logger.info("Requesting viral analysis", { videoId, desiredClipCount });
+    const { data } = await aiClient.post("/api/analyze", {
+      transcript,
+      video_id: videoId,
+      desired_clip_count: desiredClipCount || undefined,
+    });
     return data;
   },
 
   /** Generate clips from video */
-  async generateClips(videoPath, clips) {
+  async generateClips(videoPath, clips, outputDir) {
     logger.info("Requesting clip generation", { clipCount: clips.length });
-    const { data } = await aiClient.post("/api/clips/generate", { video_path: videoPath, clips });
+    const { data } = await aiClient.post("/api/clips/generate", { video_path: videoPath, clips, output_dir: outputDir });
     return data;
   },
 

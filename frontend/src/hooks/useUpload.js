@@ -9,6 +9,7 @@ import { SUPPORTED_VIDEO_FORMATS, MAX_UPLOAD_SIZE_BYTES } from "@/constants/plat
 export default function useUpload() {
   const { uploadVideo, uploadLocalVideo, isUploading, uploadProgress } = useVideoStore();
   const [validationError, setValidationError] = useState(null);
+  const [desiredClipCount, setDesiredClipCount] = useState(5);
 
   const validate = useCallback((file) => {
     if (!SUPPORTED_VIDEO_FORMATS.includes(file.type)) {
@@ -30,7 +31,7 @@ export default function useUpload() {
       }
       setValidationError(null);
       try {
-        const result = await uploadVideo(file);
+        const result = await uploadVideo(file, desiredClipCount);
         toast.success("Video uploaded! Processing will begin shortly.");
         return result;
       } catch (err) {
@@ -38,7 +39,7 @@ export default function useUpload() {
         return null;
       }
     },
-    [uploadVideo, validate]
+    [uploadVideo, validate, desiredClipCount]
   );
 
   const uploadLocalPath = useCallback(async (localPath) => {
@@ -48,14 +49,14 @@ export default function useUpload() {
     }
     setValidationError(null);
     try {
-      const result = await uploadLocalVideo(localPath);
+      const result = await uploadLocalVideo(localPath, desiredClipCount);
       toast.success("Local video copied and processing started!");
       return result;
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to copy local file");
       return null;
     }
-  }, [uploadLocalVideo]);
+  }, [uploadLocalVideo, desiredClipCount]);
 
-  return { upload, uploadLocalPath, isUploading, uploadProgress, validationError };
+  return { upload, uploadLocalPath, isUploading, uploadProgress, validationError, desiredClipCount, setDesiredClipCount };
 }

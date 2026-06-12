@@ -32,7 +32,9 @@ Prioritize moments with:
 - "Wait for it" suspense
 - Humor and relatability
 - Expert insights delivered with energy
-- Personal stories and confessions"""
+- Personal stories and confessions
+
+IMPORTANT: You MUST generate the `reason`, `suggested_title`, and `seo_keywords` in the SAME LANGUAGE as the transcript."""
 
 
 VIRAL_ANALYSIS_USER = """Analyze the following transcript and identify the top {top_n} viral clip candidates.
@@ -74,7 +76,8 @@ Rules:
 - Keep hooks under 15 words
 - Use power words
 - Create urgency or curiosity
-- Make it personal when possible"""
+- Make it personal when possible
+- IMPORTANT: You MUST generate the hooks in the SAME LANGUAGE as the original text."""
 
 
 HOOK_GENERATION_USER = """Rewrite the following opening into 5 different viral hooks:
@@ -106,7 +109,8 @@ Rules:
 - Keep hooks under 15 words
 - Use power words
 - Create urgency or curiosity
-- Return hooks for ALL clips in order"""
+- Return hooks for ALL clips in order
+- IMPORTANT: You MUST generate the hooks in the SAME LANGUAGE as the original text."""
 
 
 HOOK_BATCH_USER = """Generate 3 viral hooks for each of the following {count} clip openings:

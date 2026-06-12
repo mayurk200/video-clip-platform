@@ -17,11 +17,8 @@ build/
 *.egg-info/
 
 # Storage
-storage/uploads/*
-storage/processed/*
-storage/clips/*
-storage/thumbnails/*
-!storage/**/.gitkeep
+storage/*
+!storage/.gitkeep
 
 # IDE
 .vscode/

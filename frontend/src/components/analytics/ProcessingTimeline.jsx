@@ -101,16 +101,16 @@ export default function ProcessingTimeline({ status = {}, videoStatus, errorMess
   };
 
   return (
-    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 space-y-5">
+    <div className="bg-transparent border border-white/[0.05] rounded-xl p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
             isFailed ? "bg-red-500/15" : isActive ? "bg-[var(--color-primary-light)]" : "bg-[var(--color-success)]/15"
           }`}>
-            {isFailed ? <AlertTriangle size={16} className="text-red-400" /> :
-             isActive ? <Zap size={16} className="text-[var(--color-primary)]" /> :
-             <CheckCircle size={16} className="text-[var(--color-success)]" />}
+            {isFailed ? <AlertTriangle size={14} className="text-red-400" /> :
+             isActive ? <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse" /> :
+             <CheckCircle size={14} className="text-emerald-400" />}
           </div>
           <div>
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -140,8 +140,8 @@ export default function ProcessingTimeline({ status = {}, videoStatus, errorMess
           transition={{ duration: 0.5, ease: "easeOut" }}
           className={`h-full rounded-full ${
             isFailed
-              ? "bg-gradient-to-r from-red-500 to-red-400"
-              : "bg-gradient-to-r from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]"
+              ? "bg-red-500"
+              : "bg-zinc-200"
           }`}
         />
       </div>

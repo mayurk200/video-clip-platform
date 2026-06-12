@@ -8,7 +8,7 @@ const PROCESSING_STATUSES = ["TRANSCRIBING", "ANALYZING", "CLIPPING", "RENDERING
  * Video service — CRUD, status tracking, retry logic.
  */
 const videoService = {
-  async create(userId, fileData) {
+  async create(userId, fileData, desiredClipCount = null) {
     const video = db.videos.insert({
       userId,
       filename: fileData.filename,
@@ -16,9 +16,10 @@ const videoService = {
       filePath: fileData.path,
       fileSize: fileData.size,
       mimeType: fileData.mimetype,
+      desiredClipCount: desiredClipCount,
       status: "QUEUED",
     });
-    logger.info(`Video created: ${video.id}`, { userId, filename: fileData.originalname });
+    logger.info(`Video created: ${video.id}`, { userId, filename: fileData.originalname, desiredClipCount });
     return video;
   },
 

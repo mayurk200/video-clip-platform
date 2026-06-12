@@ -5,9 +5,10 @@ import api from "./api";
  */
 const videoService = {
   /** Upload video with progress callback */
-  async upload(file, onProgress) {
+  async upload(file, onProgress, desiredClipCount) {
     const formData = new FormData();
     formData.append("video", file);
+    if (desiredClipCount) formData.append("desiredClipCount", desiredClipCount);
 
     const { data } = await api.post("/videos/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -20,8 +21,8 @@ const videoService = {
     return data;
   },
 
-  async uploadLocal(localPath) {
-    const { data } = await api.post("/videos/upload-local", { localPath });
+  async uploadLocal(localPath, desiredClipCount) {
+    const { data } = await api.post("/videos/upload-local", { localPath, desiredClipCount });
     return data;
   },
 

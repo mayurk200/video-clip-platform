@@ -12,6 +12,7 @@ settings = get_settings()
 class AnalyzeRequest(BaseModel):
     transcript: dict  # TranscriptionResult as dict
     video_id: Optional[str] = None
+    desired_clip_count: Optional[int] = None
 
 
 @router.post("/analyze")
@@ -22,7 +23,8 @@ def analyze(request: AnalyzeRequest):
         segments = request.transcript.get("segments", [])
 
         viral_clips = analyze_transcript_for_viral_moments(full_text, segments)
-        ranked = rank_clips(viral_clips, top_n=settings.top_clips_count)
+        top_n = request.desired_clip_count if request.desired_clip_count else settings.top_clips_count
+        ranked = rank_clips(viral_clips, top_n=top_n)
 
         return {
             "clips": [c.model_dump() for c in ranked],

@@ -4,11 +4,13 @@ import { successResponse, errorResponse } from "../utils/responseHelper.js";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import storage from "../config/storage.js";
 
 export async function upload(req, res, next) {
   try {
     if (!req.file) return errorResponse(res, "No video file provided", 400);
-    const video = await videoService.create(req.user.id, req.file);
+    const desiredClipCount = parseInt(req.body.desiredClipCount) || null;
+    const video = await videoService.create(req.user.id, req.file, desiredClipCount);
     await addVideoProcessingJob(video.id, video.filePath);
     return successResponse(res, { video }, "Video uploaded and queued for processing", 201);
   } catch (err) { next(err); }
@@ -75,8 +77,25 @@ export async function uploadLocal(req, res, next) {
     if (!stats.isFile()) return errorResponse(res, "Path is not a file", 400);
 
     const ext = path.extname(localPath);
-    const filename = `${crypto.randomUUID()}${ext}`;
-    const destination = path.resolve(`../storage/uploads/${filename}`);
+    const originalName = path.basename(localPath);
+    let baseName = path.basename(localPath, ext).replace(/[^a-zA-Z0-9_-]/g, "_");
+    if (baseName.length > 50) baseName = baseName.substring(0, 50);
+    const shortId = crypto.randomUUID().slice(0, 8);
+    const folderName = `${baseName}_${shortId}`;
+    
+    const videoDir = path.join(storage.root, folderName);
+    const originalDir = path.join(videoDir, "original");
+    const clipsDir = path.join(videoDir, "clips");
+    const tempDir = path.join(videoDir, "temp");
+
+    await fs.mkdir(originalDir, { recursive: true });
+    await fs.mkdir(clipsDir, { recursive: true });
+    await fs.mkdir(tempDir, { recursive: true });
+
+    let sanitizedBaseName = originalName.substring(0, originalName.length - ext.length).replace(/[^a-zA-Z0-9_.-]/g, "_");
+    if (sanitizedBaseName.length > 50) sanitizedBaseName = sanitizedBaseName.substring(0, 50);
+    const sanitizedName = `${sanitizedBaseName}${ext}`;
+    const destination = path.join(originalDir, sanitizedName);
 
     await fs.copyFile(localPath, destination);
 
@@ -88,14 +107,15 @@ export async function uploadLocal(req, res, next) {
     }
 
     const fileData = {
-      filename,
-      originalname: path.basename(localPath),
+      filename: sanitizedName,
+      originalname: originalName,
       path: destination,
       size: stats.size,
       mimetype: `video/${ext.replace(".", "")}`,
     };
 
-    const video = await videoService.create(req.user.id, fileData);
+    const desiredClipCount = parseInt(req.body.desiredClipCount) || null;
+    const video = await videoService.create(req.user.id, fileData, desiredClipCount);
     await addVideoProcessingJob(video.id, video.filePath);
     return successResponse(res, { video }, "Local video copied and queued", 201);
   } catch (err) {

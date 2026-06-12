@@ -4,6 +4,7 @@ import processingService from "../../services/processing.service.js";
 import db from "../../config/database.js";
 import logger from "../../utils/logger.js";
 import fs from "fs";
+import path from "path";
 
 /** Track step start times for elapsed calculation */
 const stepTimers = {};
@@ -97,7 +98,9 @@ export async function processVideo(jobData) {
     logger.info(`  Step 2/4: Analyzing transcript for viral moments...`);
     const t1 = Date.now();
 
-    const analysis = await processingService.analyzeTranscript(transcription, videoId);
+    const videoRecord = db.videos.findOne({ id: videoId });
+    const desiredClipCount = videoRecord?.desiredClipCount || null;
+    const analysis = await processingService.analyzeTranscript(transcription, videoId, desiredClipCount);
 
     await updateJobStep(videoId, "analysis", "completed");
     logger.info(`  Step 2/4: Analysis done (${fmtMs(Date.now() - t1)}) — ${analysis.clips?.length || 0} clip candidates`);
@@ -122,9 +125,11 @@ export async function processVideo(jobData) {
 
     if (clips.length > 0) {
       logger.info(`  Step 4/4: Cutting ${clips.length} clips...`);
+      const outputDir = path.join(path.dirname(videoPath), "..", "clips");
       const result = await processingService.generateClips(
         videoPath,
-        clips.map((c) => ({ id: c.id, start: c.startTime, end: c.endTime }))
+        clips.map((c) => ({ id: c.id, start: c.startTime, end: c.endTime })),
+        outputDir
       );
 
       if (result.clips && result.clips.length > 0) {

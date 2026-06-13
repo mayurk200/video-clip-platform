@@ -8,6 +8,14 @@ export async function listByVideo(req, res, next) {
   } catch (err) { next(err); }
 }
 
+export async function listRecent(req, res, next) {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const clips = await clipService.listRecent(limit);
+    return successResponse(res, { clips });
+  } catch (err) { next(err); }
+}
+
 export async function getById(req, res, next) {
   try {
     const clip = await clipService.getById(req.params.id);

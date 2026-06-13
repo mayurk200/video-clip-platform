@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Film, AlertCircle, Scissors, File } from "lucide-react";
+import { Upload, Film, AlertCircle, Scissors, File, Loader2 } from "lucide-react";
 import useUpload from "@/hooks/useUpload";
 import { formatFileSize } from "@/lib/utils";
 
@@ -86,11 +86,12 @@ function LocalPathInput({ onSubmit, disabled }) {
           disabled={disabled}
         />
         <button
-          className="premium-btn px-4 py-2 text-sm disabled:opacity-40"
+          className="btn btn-primary"
           disabled={disabled || !localPath.trim()}
           onClick={handleSubmit}
         >
-          Inject
+          {disabled ? <Loader2 size={16} className="animate-spin" /> : null}
+          {disabled ? "Injecting..." : "Inject"}
         </button>
       </div>
     </div>
@@ -100,7 +101,7 @@ function LocalPathInput({ onSubmit, disabled }) {
 /**
  * Ultra-premium Dropzone with Vercel aesthetic.
  */
-export default function DropzoneUploader() {
+export default function DropzoneUploader({ onUploadSuccess }) {
   const {
     upload,
     uploadLocalPath,
@@ -111,10 +112,26 @@ export default function DropzoneUploader() {
     setDesiredClipCount,
   } = useUpload();
 
+  const handleUploadSuccess = useCallback((result) => {
+    if (result?.video?.id) {
+      onUploadSuccess?.(result.video.id);
+    }
+  }, [onUploadSuccess]);
+
   const onDrop = useCallback(
-    (acceptedFiles) => { if (acceptedFiles.length > 0) upload(acceptedFiles[0]); },
-    [upload]
+    async (acceptedFiles) => { 
+      if (acceptedFiles.length > 0) {
+        const result = await upload(acceptedFiles[0]);
+        handleUploadSuccess(result);
+      }
+    },
+    [upload, handleUploadSuccess]
   );
+
+  const handleLocalSubmit = async (path) => {
+    const result = await uploadLocalPath(path);
+    handleUploadSuccess(result);
+  };
 
   const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
     onDrop,
@@ -135,13 +152,13 @@ export default function DropzoneUploader() {
       <div
         {...getRootProps()}
         className={`
-          relative rounded-xl border border-dashed transition-all duration-300
+          relative rounded-xl border-2 border-dashed transition-all duration-300
           flex flex-col items-center justify-center text-center cursor-pointer overflow-hidden
           ${isDragActive 
-            ? "border-blue-500/50 bg-blue-500/[0.02]" 
-            : "border-white/[0.1] hover:border-white/[0.2] bg-white/[0.01] hover:bg-white/[0.02]"
+            ? "border-blue-500/50 bg-blue-500/[0.05]" 
+            : "border-white/[0.1] hover:border-white/[0.2] bg-white/[0.01] hover:bg-white/[0.03]"
           }
-          ${isUploading ? "py-10 pointer-events-none opacity-80 border-solid" : "py-16"}
+          ${isUploading ? "min-h-[300px] pointer-events-none opacity-80 border-solid" : "min-h-[400px]"}
         `}
       >
         <input {...getInputProps()} id="video-upload-input" />
@@ -153,14 +170,31 @@ export default function DropzoneUploader() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-4"
+              className="flex flex-col items-center gap-6 w-full max-w-md px-6"
             >
-              <div className="w-10 h-10 rounded-full border border-white/[0.1] flex items-center justify-center animate-spin">
-                <div className="w-1.5 h-1.5 bg-zinc-300 rounded-full absolute top-1"></div>
+              <div className="w-16 h-16 rounded-full border border-white/[0.1] flex items-center justify-center animate-spin relative shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                <div className="w-2 h-2 bg-blue-400 rounded-full absolute top-1 shadow-[0_0_10px_rgba(96,165,250,0.8)]"></div>
               </div>
-              <div className="text-left">
-                <p className="text-sm font-medium text-zinc-200 truncate max-w-[200px]">{activeFile.name}</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">{formatFileSize(activeFile.size)}</p>
+              <div className="text-center w-full">
+                <p className="text-lg font-medium text-zinc-200 truncate">{activeFile.name}</p>
+                <p className="text-sm text-zinc-500 mt-1">{formatFileSize(activeFile.size)}</p>
+                
+                <UploadProgress progress={uploadProgress} />
+
+                <div className="grid grid-cols-2 gap-4 mt-8 text-left">
+                  <div className="bg-black/40 border border-white/[0.05] p-3 rounded-lg">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Expected Clips</p>
+                    <p className="text-sm font-semibold text-emerald-400">~{desiredClipCount}</p>
+                  </div>
+                  <div className="bg-black/40 border border-white/[0.05] p-3 rounded-lg">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Language</p>
+                    <p className="text-sm font-semibold text-blue-400">Auto-Detect</p>
+                  </div>
+                  <div className="bg-black/40 border border-white/[0.05] p-3 rounded-lg col-span-2">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Est. Processing Time</p>
+                    <p className="text-sm font-semibold text-zinc-300">~2-4 minutes</p>
+                  </div>
+                </div>
               </div>
             </motion.div>
           ) : (
@@ -171,24 +205,28 @@ export default function DropzoneUploader() {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center"
             >
-              <div className="w-12 h-12 rounded-full border border-white/[0.08] bg-white/[0.02] flex items-center justify-center mb-4">
+              <div className="w-20 h-20 rounded-full border border-white/[0.08] bg-white/[0.02] flex items-center justify-center mb-6 shadow-2xl">
                 {isDragActive 
-                  ? <Upload size={18} className="text-blue-400" />
-                  : <Film size={18} className="text-zinc-400" />
+                  ? <Upload size={32} className="text-blue-400 animate-bounce" />
+                  : <Film size={32} className="text-zinc-400" />
                 }
               </div>
-              <p className="text-sm font-medium text-zinc-200">
-                {isDragActive ? "Drop to upload" : "Click or drag video"}
+              <h3 className="text-2xl font-semibold text-zinc-200 mb-2">
+                {isDragActive ? "Drop video here" : "Drag and drop your video"}
+              </h3>
+              <p className="text-sm text-zinc-400 mb-6 max-w-sm">
+                We'll automatically extract the best viral moments and convert them to vertical 9:16 format.
               </p>
-              <p className="text-[11px] text-zinc-500 mt-1.5">
-                MP4, MOV, WebM up to 2GB
-              </p>
+              
+              <div className="flex flex-wrap justify-center gap-3">
+                <span className="px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-[11px] text-zinc-400 font-medium">MP4, MOV, WebM</span>
+                <span className="px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-[11px] text-zinc-400 font-medium">Up to 2GB</span>
+                <span className="px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.05] text-[11px] text-zinc-400 font-medium">Auto-captions included</span>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {isUploading && <UploadProgress progress={uploadProgress} />}
 
       <AnimatePresence>
         {validationError && (
@@ -206,7 +244,7 @@ export default function DropzoneUploader() {
         )}
       </AnimatePresence>
 
-      <LocalPathInput onSubmit={uploadLocalPath} disabled={isUploading} />
+      <LocalPathInput onSubmit={handleLocalSubmit} disabled={isUploading} />
     </div>
   );
 }

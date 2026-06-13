@@ -1,12 +1,17 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import Dashboard from "@/pages/Dashboard";
+
+// Layout
+import MainLayout from "@/components/layout/MainLayout";
+
+// Pages
+import Home from "@/pages/Home";
 
 export default function App() {
   return (
     <>
       <Toaster
-        position="top-center"
+        position="top-right"
         toastOptions={{
           duration: 3000,
           style: {
@@ -22,14 +27,13 @@ export default function App() {
           error: { iconTheme: { primary: "#EF4444", secondary: "#12121E" } },
         }}
       />
-      <div className="min-h-screen bg-[var(--color-bg-base)] text-[var(--color-text-primary)] font-sans antialiased">
-        <main className="mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-      </div>
+      
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
     </>
   );
 }

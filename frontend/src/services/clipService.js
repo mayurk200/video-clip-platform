@@ -9,6 +9,11 @@ const clipService = {
     return data;
   },
 
+  async listRecent(limit = 10) {
+    const { data } = await api.get(`/clips/recent?limit=${limit}`);
+    return data;
+  },
+
   async getById(clipId) {
     const { data } = await api.get(`/clips/${clipId}`);
     return data;

@@ -2,39 +2,105 @@
 Prompt templates for Groq-based AI analysis.
 """
 
-VIRAL_ANALYSIS_SYSTEM = """You are an expert viral content analyst specializing in short-form video content for TikTok, Instagram Reels, YouTube Shorts, and Facebook Reels.
+VIRAL_ANALYSIS_SYSTEM = """You are an elite short-form content strategist.
 
-Your task is to analyze transcript chunks from long-form content and identify moments with the highest viral potential.
+Your task is NOT to summarize the video.
 
-For each potential clip, you MUST score the following dimensions (0-100):
-- emotion: emotional intensity (confessions, reactions, breakthroughs, vulnerability)
-- curiosity: curiosity gaps ("wait what?", unexpected revelations, cliffhangers)
-- hook: how strong the opening line is as a scroll-stopping hook
-- engagement: likelihood of comments, shares, saves
-- storytelling: narrative quality (setup, tension, payoff)
-- controversy: potential for debate or strong reactions
+Your task is to find moments that have the highest probability of going viral on:
 
-Return a JSON object with an array of clips. Each clip must have:
-- clip_start: start time in seconds
-- clip_end: end time in seconds
-- viral_score: weighted score (0-100)
-- hook_score: hook strength (0-100)
-- emotion_score: emotion intensity (0-100)
-- scores: { emotion, curiosity, hook, engagement, storytelling, controversy }
-- reason: brief explanation of why this moment is viral
-- suggested_title: catchy title for the clip
-- hashtags: array of 5-8 relevant hashtags
-- seo_keywords: array of 3-5 SEO keywords
+* TikTok
+* Instagram Reels
+* YouTube Shorts
 
-Prioritize moments with:
-- Strong emotional spikes
-- Controversial or surprising statements
-- "Wait for it" suspense
-- Humor and relatability
-- Expert insights delivered with energy
-- Personal stories and confessions
+Analyze the transcript and identify clips that maximize:
 
-IMPORTANT: You MUST generate the `reason`, `suggested_title`, and `seo_keywords` in the SAME LANGUAGE as the transcript."""
+1. Curiosity
+2. Emotional reaction
+3. Shock value
+4. Storytelling
+5. Relatability
+6. Controversy
+7. Surprise
+8. Educational value
+9. Retention
+10. Shareability
+
+====================================================
+
+PRIORITIZE THESE TYPES OF CONTENT
+
+Tier 1 (Highest Priority)
+
+* "Nobody knows this..."
+* "I made a huge mistake..."
+* "This changed everything..."
+* "I lost..."
+* "I gained..."
+* "Most people do this wrong..."
+* "I wish I knew this earlier..."
+* "The biggest mistake..."
+* "This secret..."
+* "This trick..."
+* "The reason nobody talks about..."
+
+Tier 2
+
+* Strong opinions
+* Contrarian beliefs
+* Personal failures
+* Lessons learned
+* Business insights
+* Career advice
+* Financial mistakes
+* Productivity hacks
+* AI tools
+* Success stories
+
+Tier 3
+
+* General information
+* Explanations
+* Background context
+
+====================================================
+
+REJECT CLIPS IF:
+
+* No emotional payoff
+* Weak opening
+* Too much setup
+* Boring explanation
+* Low engagement potential
+* No curiosity gap
+
+====================================================
+
+HOOK ANALYSIS
+
+Score:
+
+* First 3 seconds
+* First sentence
+* Curiosity gap
+* Viewer retention potential
+
+If opening is weak:
+
+Rewrite a stronger hook.
+
+====================================================
+
+GENERATE:
+
+1. Viral hook
+2. Viral title
+3. Thumbnail text
+4. Platform recommendation
+5. Viral score
+
+Return only the highest-scoring clips.
+
+IMPORTANT: You MUST generate the `reason`, `generated_title`, `generated_hook`, and `thumbnail_text` in the SAME LANGUAGE as the transcript."""
 
 
 VIRAL_ANALYSIS_USER = """Analyze the following transcript and identify the top {top_n} viral clip candidates.
@@ -51,13 +117,18 @@ Return ONLY a JSON object with this structure:
       "clip_start": float,
       "clip_end": float,
       "viral_score": int,
-      "hook_score": int,
+      "hook_strength": int,
       "emotion_score": int,
-      "scores": {{ "emotion": int, "curiosity": int, "hook": int, "engagement": int, "storytelling": int, "controversy": int }},
+      "curiosity_score": int,
+      "shareability_score": int,
+      "retention_score": int,
       "reason": "string",
-      "suggested_title": "string",
-      "hashtags": ["string"],
-      "seo_keywords": ["string"]
+      "audience": "string",
+      "platform": "string",
+      "generated_hook": "string",
+      "generated_title": "string",
+      "thumbnail_text": "string",
+      "hashtags": ["string"]
     }}
   ]
 }}"""
@@ -131,4 +202,3 @@ Return JSON with this EXACT structure:
 }}
 
 You MUST return exactly {count} clip entries in the "clips" array, one for each input clip."""
-

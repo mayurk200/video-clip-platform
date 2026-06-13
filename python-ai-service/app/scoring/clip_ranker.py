@@ -4,14 +4,13 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Weighted scoring formula
+# Weighted scoring formula using the new flat fields
 WEIGHTS = {
-    "emotion": 0.25,
-    "curiosity": 0.20,
-    "hook": 0.20,
-    "engagement": 0.15,
-    "storytelling": 0.10,
-    "controversy": 0.10,
+    "hook_strength": 0.25,
+    "emotion_score": 0.20,
+    "curiosity_score": 0.20,
+    "shareability_score": 0.15,
+    "retention_score": 0.20,
 }
 
 
@@ -21,14 +20,12 @@ def rank_clips(clips: List[ViralClip], top_n: int = 10) -> List[ViralClip]:
     Returns top N clips sorted by computed score.
     """
     for clip in clips:
-        scores = clip.scores
         weighted = (
-            scores.emotion * WEIGHTS["emotion"]
-            + scores.curiosity * WEIGHTS["curiosity"]
-            + scores.hook * WEIGHTS["hook"]
-            + scores.engagement * WEIGHTS["engagement"]
-            + scores.storytelling * WEIGHTS["storytelling"]
-            + scores.controversy * WEIGHTS["controversy"]
+            clip.hook_strength * WEIGHTS["hook_strength"]
+            + clip.emotion_score * WEIGHTS["emotion_score"]
+            + clip.curiosity_score * WEIGHTS["curiosity_score"]
+            + clip.shareability_score * WEIGHTS["shareability_score"]
+            + clip.retention_score * WEIGHTS["retention_score"]
         )
         clip.viral_score = round(weighted)
 

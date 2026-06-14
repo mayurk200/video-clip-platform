@@ -1,9 +1,9 @@
+import json
+import os
 from pydantic_settings import BaseSettings
-from functools import lru_cache
-
 
 class Settings(BaseSettings):
-    """Application configuration loaded from environment variables."""
+    """Application configuration loaded from environment variables and settings.json."""
 
     # Service
     ai_service_port: int = 8000
@@ -34,7 +34,26 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-
-@lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    """Reads settings.json dynamically so config changes don't require restart."""
+    # storage/settings.json is two levels up from app/ (python-ai-service/app -> python-ai-service -> root)
+    settings_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "storage", "settings.json")
+    
+    data = {}
+    if os.path.exists(settings_path):
+        try:
+            with open(settings_path, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+                
+                # Map JSON Settings Dashboard categories to Python variables
+                if "ai" in raw_data:
+                    if raw_data["ai"].get("groqApiKey"):
+                        data["groq_api_key"] = raw_data["ai"]["groqApiKey"]
+                    if raw_data["ai"].get("groqModel"):
+                        data["groq_model"] = raw_data["ai"]["groqModel"]
+                    if raw_data["ai"].get("whisperMode"):
+                        data["whisper_mode"] = raw_data["ai"]["whisperMode"]
+        except Exception:
+            pass
+
+    return Settings(**data)

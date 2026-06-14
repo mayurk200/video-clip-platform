@@ -23,7 +23,7 @@ const clipService = {
   async createMany(videoId, clipData) {
     const items = clipData.map((c) => ({
       videoId,
-      title: c.generated_title || c.suggested_title || c.title || "",
+      title: c.title_info?.best_title || c.generated_title || c.title || "",
       hook: c.generated_hook || c.hook || "",
       startTime: c.clip_start,
       endTime: c.clip_end,

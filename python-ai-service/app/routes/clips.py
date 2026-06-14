@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from app.ffmpeg.clipper import cut_clip_fast
+from app.ffmpeg.clipper import cut_and_reframe
 from app.config import get_settings
 from app.utils.logger import get_logger
 from app.utils.file_utils import ensure_dir
@@ -17,6 +17,9 @@ class ClipSpec(BaseModel):
     id: str
     start: float
     end: float
+    title: str = ""
+    overlay_title: str = ""
+    words: List[dict] = []
 
 
 class GenerateClipsRequest(BaseModel):
@@ -28,13 +31,21 @@ class GenerateClipsRequest(BaseModel):
 def _cut_one_clip(clip: ClipSpec, video_path: str, output_dir: str) -> dict:
     """Cut a single clip — runs in a thread pool."""
     output_path = os.path.join(output_dir, f"{clip.id}.mp4")
-    cut_clip_fast(video_path, output_path, clip.start, clip.end)
+    cut_and_reframe(
+        video_path, 
+        output_path, 
+        clip.start, 
+        clip.end, 
+        title=clip.title, 
+        overlay_title=clip.overlay_title,
+        words=clip.words
+    )
     return {"id": clip.id, "path": output_path}
 
 
 @router.post("/clips/generate")
 def generate_clips(request: GenerateClipsRequest):
-    """Cut clips from source video concurrently using stream copy (no re-encoding)."""
+    """Cut clips from source video concurrently and reframe to 9:16 vertical."""
     try:
         output_dir = request.output_dir if request.output_dir else os.path.join(settings.storage_path, "clips")
         ensure_dir(output_dir)

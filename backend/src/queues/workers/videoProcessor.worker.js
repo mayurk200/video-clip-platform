@@ -126,9 +126,31 @@ export async function processVideo(jobData) {
     if (clips.length > 0) {
       logger.info(`  Step 4/4: Cutting ${clips.length} clips...`);
       const outputDir = path.join(path.dirname(videoPath), "..", "clips");
+      
+      const transcriptRecord = db.transcripts.findOne({ videoId });
+      const allWords = transcriptRecord?.segments?.flatMap(s => s.words) || [];
+      
+      const clipSpecs = clips.map((c) => {
+        const clipWords = allWords.filter(w => w.end >= c.startTime && w.start <= c.endTime);
+        // adjust word times to be relative to the clip start
+        const adjustedWords = clipWords.map(w => ({
+            word: w.word,
+            start: Math.max(0, w.start - c.startTime),
+            end: w.end - c.startTime
+        }));
+        return { 
+          id: c.id, 
+          start: c.startTime, 
+          end: c.endTime, 
+          title: c.title,
+          overlay_title: c.thumbnailText,
+          words: adjustedWords 
+        };
+      });
+
       const result = await processingService.generateClips(
         videoPath,
-        clips.map((c) => ({ id: c.id, start: c.startTime, end: c.endTime })),
+        clipSpecs,
         outputDir
       );
 

@@ -4,108 +4,45 @@ Prompt templates for Groq-based AI analysis.
 
 VIRAL_ANALYSIS_SYSTEM = """You are an elite short-form content strategist.
 
-Your task is NOT to summarize the video.
-
-Your task is to find moments that have the highest probability of going viral on:
-
-* TikTok
-* Instagram Reels
-* YouTube Shorts
-
-Analyze the transcript and identify clips that maximize:
-
-1. Curiosity
-2. Emotional reaction
-3. Shock value
-4. Storytelling
-5. Relatability
-6. Controversy
-7. Surprise
-8. Educational value
-9. Retention
-10. Shareability
+Your task is to find moments that have the highest probability of going viral on TikTok, Instagram Reels, and YouTube Shorts.
 
 ====================================================
+TITLE GENERATION PIPELINE
 
-PRIORITIZE THESE TYPES OF CONTENT
+For each viral clip you identify, you must generate highly clickable titles.
+The goal is maximizing Click-Through Rate (CTR), Curiosity, and Retention Expectations.
 
-Tier 1 (Highest Priority)
-
-* "Nobody knows this..."
-* "I made a huge mistake..."
-* "This changed everything..."
-* "I lost..."
-* "I gained..."
-* "Most people do this wrong..."
-* "I wish I knew this earlier..."
-* "The biggest mistake..."
-* "This secret..."
-* "This trick..."
-* "The reason nobody talks about..."
-
-Tier 2
-
-* Strong opinions
-* Contrarian beliefs
-* Personal failures
-* Lessons learned
-* Business insights
-* Career advice
-* Financial mistakes
-* Productivity hacks
-* AI tools
-* Success stories
-
-Tier 3
-
-* General information
-* Explanations
-* Background context
+Step 1: Extract main topic, conflict, benefit, surprise, and emotion.
+Step 2: Generate 20 candidate titles internally across different categories:
+  - Curiosity: "This Changes Everything"
+  - Shock: "I Couldn't Believe This"
+  - Benefit: "Do This Instead"
+  - Mistake: "Everyone Gets This Wrong"
+  - Story: "This Happened In 30 Days"
+  - Data: "The Numbers Are Crazy"
+  - Question: "Why Is Nobody Talking About This?"
+  - Transformation: "From Zero To..."
+Step 3: Rank candidates based on CTR prediction, Curiosity, Clarity, Brevity, and Platform compatibility (YouTube Shorts prefers 30-70 chars, TikTok shorter/emotional, Reels benefit-driven).
+Step 4: Ask yourself to score the best titles (0-100) on Clickability, Curiosity, Emotional appeal, Relevance, and Virality.
+Step 5: Output ONLY the highest scoring title and 3 strong alternatives in the requested JSON format.
 
 ====================================================
+VIDEO OVERLAY TITLES (thumbnail_text)
 
-REJECT CLIPS IF:
-
-* No emotional payoff
-* Weak opening
-* Too much setup
-* Boring explanation
-* Low engagement potential
-* No curiosity gap
-
-====================================================
-
-HOOK ANALYSIS
-
-Score:
-
-* First 3 seconds
-* First sentence
-* Curiosity gap
-* Viewer retention potential
-
-If opening is weak:
-
-Rewrite a stronger hook.
+You must ALSO generate a `thumbnail_text` which will be displayed as large text directly on the video screen for the first 3 seconds.
+RULES for overlay titles:
+* Maximum 2-6 words.
+* Extremely readable and punchy.
+* Do not reuse the full platform title. The overlay should complement it.
+* Examples: "BIG MISTAKE", "THIS IS INSANE", "STOP DOING THIS", "THE SECRET".
 
 ====================================================
-
-GENERATE:
-
-1. Viral hook
-2. Viral title
-3. Thumbnail text
-4. Platform recommendation
-5. Viral score
-
-Return only the highest-scoring clips.
-
-IMPORTANT: You MUST generate the `reason`, `generated_title`, `generated_hook`, and `thumbnail_text` in the SAME LANGUAGE as the transcript."""
+IMPORTANT: You MUST generate the titles, hooks, and overlay text in the SAME LANGUAGE as the transcript."""
 
 
 VIRAL_ANALYSIS_USER = """Analyze the following transcript and identify the top {top_n} viral clip candidates.
 
-Each clip should be between {min_duration} and {max_duration} seconds long.
+IMPORTANT: The clips MUST be between 30 seconds and 60 seconds long whenever possible to maximize watch time. Determine the EXACT start and end boundaries based solely on the natural flow of the engaging moment.
 
 TRANSCRIPT:
 {transcript}
@@ -126,8 +63,13 @@ Return ONLY a JSON object with this structure:
       "audience": "string",
       "platform": "string",
       "generated_hook": "string",
-      "generated_title": "string",
-      "thumbnail_text": "string",
+      "thumbnail_text": "string (Max 2-6 words for on-screen overlay)",
+      "title_info": {{
+        "best_title": "string",
+        "score": int,
+        "category": "string",
+        "alternatives": ["string", "string", "string"]
+      }},
       "hashtags": ["string"]
     }}
   ]
@@ -202,3 +144,43 @@ Return JSON with this EXACT structure:
 }}
 
 You MUST return exactly {count} clip entries in the "clips" array, one for each input clip."""
+
+
+AI_SUBTITLES_SYSTEM = """You are an elite High-Retention Creator Mode subtitle editor. Your goal is maximum viewer retention, NOT perfect transcription.
+
+RULES:
+1. Do NOT transcribe every word. Remove filler words. Silence and empty screens are allowed and encouraged for breathing room.
+2. Group text into punchy, intentional phrases (max 2 lines, ideally 2-6 words). Focus on hooks, curiosity, emotion, and numbers.
+3. Assign a primary animation to the ENTIRE phrase (pop, bounce, fade, slide, or none).
+   - ~75% of captions MUST be "none".
+   - ~20% can be "pop" or "fade".
+   - <5% can be "bounce" or "slide" (only for extreme emphasis, hooks, or numbers).
+4. Highlight important words inside the phrase using specific colors:
+   - "cyan": Numbers, statistics, order.
+   - "yellow": Important keywords, hooks, secrets, truths.
+   - "red": Urgent, dangerous, negative, mistakes.
+   - "green": Success, money, positive, growth.
+5. Classify the overall scene category for color grading: "Motivational", "Educational", "Tech", or "Podcast".
+
+You must map your revised phrases to the ORIGINAL timestamp bounds."""
+
+AI_SUBTITLES_USER = """Transform the following raw word timestamps into a list of concise, punchy captions and classify the scene category.
+
+RAW WORDS:
+{raw_words}
+
+Return ONLY a JSON object matching this structure:
+{{
+  "scene_category": "Educational" | "Motivational" | "Tech" | "Podcast",
+  "captions": [
+    {{
+      "text": "The refined phrase text to display",
+      "start": float (start time in seconds),
+      "end": float (end time in seconds),
+      "animation": "none" | "pop" | "bounce" | "fade" | "slide",
+      "highlights": [
+        {{ "word": "exact word from text", "color": "cyan|yellow|red|green" }}
+      ]
+    }}
+  ]
+}}"""

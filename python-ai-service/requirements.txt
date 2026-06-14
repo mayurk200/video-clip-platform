@@ -15,14 +15,7 @@ mediapipe==0.10.35
 opencv-python-headless==4.10.0.84
 numpy
 
-# Video Processing
-moviepy==2.1.2
 
-# Scene Detection
-scenedetect[opencv]==0.6.5
-
-# Image Processing
-Pillow
 
 # HTTP
 httpx==0.28.1

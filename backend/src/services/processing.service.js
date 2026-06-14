@@ -2,12 +2,16 @@ import axios from "axios";
 import config from "../config/index.js";
 import logger from "../utils/logger.js";
 
+import http from "http";
+
 /**
  * Service to communicate with the Python AI microservice.
  */
 const aiClient = axios.create({
   baseURL: config.aiService.url,
   timeout: 1800000, // 30 min default for long processing
+  httpAgent: new http.Agent({ keepAlive: false }),
+  headers: { "Connection": "close" }
 });
 
 const processingService = {
@@ -44,12 +48,6 @@ const processingService = {
   async renderClip(clipPath, options) {
     logger.info("Requesting clip render", { clipPath });
     const { data } = await aiClient.post("/api/render", { clip_path: clipPath, ...options });
-    return data;
-  },
-
-  /** Generate hooks for a clip */
-  async generateHooks(text) {
-    const { data } = await aiClient.post("/api/hooks/generate", { text });
     return data;
   },
 

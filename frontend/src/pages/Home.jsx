@@ -218,32 +218,87 @@ export default function Home() {
             <p className="text-sm text-zinc-500 mt-1 max-w-sm">Upload a video above to start extracting highly engaging vertical clips automatically.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {recentClips.map((clip) => (
-              <div key={clip.id} className="group relative aspect-[9/16] rounded-xl overflow-hidden bg-black border border-white/[0.1] hover:border-white/[0.3] transition-all">
-                {/* Simulated Thumbnail background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 opacity-50 group-hover:opacity-30 transition-opacity"></div>
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors"></div>
-                
-                {/* Viral Score Badge */}
-                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/10 flex items-center gap-1">
-                  <Zap size={12} className="text-yellow-400" />
-                  <span className="text-xs font-bold text-white">{clip.viralScore}</span>
-                </div>
-                
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300">
-                  <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                    <Play fill="white" size={20} className="text-white ml-1" />
-                  </div>
-                </div>
+          <div className="space-y-12">
+            {(() => {
+              const sortedClips = [...recentClips].sort((a, b) => b.viralScore - a.viralScore);
+              const bestClip = sortedClips[0];
+              const otherClips = sortedClips.slice(1);
 
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-                  <p className="text-sm font-semibold text-white line-clamp-2">{clip.title}</p>
-                  <p className="text-[10px] text-zinc-400 mt-1">{Math.round(clip.duration)}s</p>
-                </div>
-              </div>
-            ))}
+              return (
+                <>
+                  {/* Best Clip Featured Section */}
+                  <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                      <Zap size={120} />
+                    </div>
+                    
+                    <div className="w-full md:w-1/3 aspect-[9/16] rounded-xl overflow-hidden bg-black relative border border-yellow-500/30 shadow-2xl shadow-yellow-500/10 shrink-0 z-10">
+                      <div className="absolute top-4 right-4 bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg z-20">
+                        <Zap size={16} fill="black" /> Best Clip ({bestClip.viralScore})
+                      </div>
+                      <video 
+                        src={`/api/clips/${bestClip.id}/download`} 
+                        controls 
+                        className="w-full h-full object-cover z-10 relative"
+                        poster={`/api/clips/${bestClip.id}/thumbnail`}
+                      />
+                    </div>
+                    
+                    <div className="w-full md:w-2/3 space-y-6 z-10">
+                      <div>
+                        <h3 className="text-3xl font-bold text-white mb-2">{bestClip.title || "Viral Moment"}</h3>
+                        <p className="text-zinc-400">Duration: {Math.round(bestClip.duration)}s</p>
+                      </div>
+                      
+                      <div className="bg-black/40 border border-white/10 rounded-xl p-6 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                        <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          <CheckCircle2 size={16} className="text-emerald-500" />
+                          Generated Hook
+                        </h4>
+                        <p className="text-xl md:text-2xl font-medium text-emerald-400 italic leading-relaxed">
+                          "{bestClip.hook || "No hook generated"}"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Other Clips Grid */}
+                  {otherClips.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-semibold mb-6 flex items-center gap-2 text-zinc-200">
+                        Other Viral Moments
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {otherClips.map((clip) => (
+                          <div key={clip.id} className="group relative aspect-[9/16] rounded-xl overflow-hidden bg-black border border-white/[0.1] hover:border-white/[0.3] transition-all">
+                            {/* Simple generic poster for other clips to save bandwidth */}
+                            <video 
+                              src={`/api/clips/${clip.id}/download`} 
+                              className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                              muted
+                              onMouseEnter={(e) => e.target.play().catch(()=>{})}
+                              onMouseLeave={(e) => { e.target.pause(); e.target.currentTime = 0; }}
+                            />
+                            
+                            {/* Viral Score Badge */}
+                            <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/10 flex items-center gap-1">
+                              <Zap size={12} className="text-yellow-400" fill="currentColor" />
+                              <span className="text-xs font-bold text-white">{clip.viralScore}</span>
+                            </div>
+
+                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
+                              <p className="text-sm font-semibold text-white line-clamp-2">{clip.title}</p>
+                              <p className="text-[10px] text-zinc-400 mt-1">{Math.round(clip.duration)}s</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </section>

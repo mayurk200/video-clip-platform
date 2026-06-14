@@ -1,4 +1,5 @@
-import { Search, Bell, Activity, Zap, ChevronDown, Scissors } from "lucide-react";
+import { Search, Bell, Activity, Zap, ChevronDown, Scissors, Settings as SettingsIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 import useVideoStore from "@/store/videoSlice";
 
 export default function TopNav({ toggleSidebar }) {
@@ -37,6 +38,11 @@ export default function TopNav({ toggleSidebar }) {
         </div>
 
         <div className="h-5 w-px bg-white/[0.1] hidden sm:block"></div>
+
+        {/* Settings */}
+        <Link to="/settings" className="text-zinc-400 hover:text-white transition-colors p-1">
+          <SettingsIcon size={20} />
+        </Link>
 
         {/* Notifications */}
         <button className="relative text-zinc-400 hover:text-white transition-colors p-1">

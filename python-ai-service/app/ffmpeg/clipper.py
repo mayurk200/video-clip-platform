@@ -155,6 +155,9 @@ def cut_and_reframe(
     output_path: str,
     start: float,
     end: float,
+    title: str = "",
+    overlay_title: str = "",
+    words: list = None,
     target_width: int = 1080,
     target_height: int = 1920,
 ) -> str:
@@ -164,6 +167,7 @@ def cut_and_reframe(
     This is ~2× faster since the video is only encoded once.
     """
     import json
+    from app.ffmpeg.ass_generator import generate_ass_file
 
     if not os.path.isfile(input_path):
         raise FileNotFoundError(f"Input video file not found: {input_path}")
@@ -185,15 +189,45 @@ def cut_and_reframe(
     crop_x = (src_width - crop_width) // 2
     crop_y = (src_height - crop_height) // 2
 
-    # Single FFmpeg command: seek + crop + scale
-    vf_filter = f"crop={crop_width}:{crop_height}:{crop_x}:{crop_y},scale={target_width}:{target_height}"
+    # Single FFmpeg command: seek + crop + scale + grading + subtitles
+    vf_filters = [f"crop={crop_width}:{crop_height}:{crop_x}:{crop_y}", f"scale={target_width}:{target_height}"]
+
+    ass_path = None
+    has_text_to_render = (words and len(words) > 0) or overlay_title
+    if has_text_to_render:
+        # Save intermediate ASS file to a temp directory
+        temp_dir = os.path.join(os.path.dirname(os.path.dirname(output_path)), "temp")
+        ensure_dir(temp_dir)
+        ass_path = os.path.join(temp_dir, f"{os.path.basename(output_path)}.ass")
+        
+        _, scene_category = generate_ass_file(words if words else [], ass_path, overlay_title=overlay_title)
+        
+        # Apply AI color grading BEFORE subtitles so text colors are preserved
+        if scene_category == "Educational":
+            vf_filters.append("eq=contrast=1.05:saturation=1.1:brightness=0.02")
+        elif scene_category == "Motivational":
+            vf_filters.append("eq=contrast=1.15:saturation=1.2:gamma=0.9")
+        elif scene_category == "Tech":
+            vf_filters.append("eq=contrast=1.1:saturation=0.95:gamma=0.95")
+        elif scene_category == "Podcast":
+            vf_filters.append("eq=contrast=1.02:saturation=1.05")
+        
+        # FFmpeg requires escaping for the subtitles filter path on Windows
+        clean_ass_path = ass_path.replace("\\", "/").replace(":", "\\:")
+        vf_filters.append(f"subtitles='{clean_ass_path}'")
+    elif title:
+        clean_title = title.replace("'", "").replace(":", "\\:").replace(",", "\\,")
+        font_path = "C\\:/Windows/Fonts/arial.ttf"
+        vf_filters.append(f"drawtext=fontfile='{font_path}':text='{clean_title}':fontcolor=white:fontsize=48:box=1:boxcolor=black@0.6:boxborderw=20:x=(w-text_w)/2:y=200")
+
+    vf_filter_str = ",".join(vf_filters)
 
     cmd = [
         settings.ffmpeg_path,
         "-ss", str(start),           # Input-level seek (instant)
         "-i", input_path,
         "-t", str(duration),
-        "-vf", vf_filter,            # Crop + scale in one pass
+        "-vf", vf_filter_str,        # Crop + scale + grade + sub in one pass
         "-c:v", "libx264",
         "-preset", "ultrafast",
         "-crf", "23",
@@ -211,6 +245,14 @@ def cut_and_reframe(
     except subprocess.TimeoutExpired:
         logger.error("FFmpeg cut+reframe timed out after 300 seconds")
         raise RuntimeError("FFmpeg processing timed out")
+    finally:
+        # Ensure temporary files are cleaned up safely
+        if ass_path and os.path.exists(ass_path):
+            try:
+                os.remove(ass_path)
+                logger.info(f"Cleaned up temp file: {ass_path}")
+            except OSError as e:
+                logger.warning(f"Failed to clean up temp file {ass_path}: {e}")
 
     if result.returncode != 0:
         logger.error(f"FFmpeg error: {result.stderr}")

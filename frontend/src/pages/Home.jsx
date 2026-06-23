@@ -1,132 +1,28 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  CheckCircle2, Circle, Loader2, 
-  Film, Zap, Play
-} from "lucide-react";
-import DropzoneUploader from "@/components/upload/DropzoneUploader";
+import { Film, Scissors, Zap, Activity, Upload, ArrowRight, Clock, CheckCircle2 } from "lucide-react";
+import KPICard from "@/components/ui/KPICard";
+import Button from "@/components/ui/Button";
+import ClipCard from "@/components/clips/ClipCard";
+import { SkeletonCard, SkeletonClipCard } from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
 import useVideoStore from "@/store/videoSlice";
 import clipService from "@/services/clipService";
-import { cn } from "@/lib/utils";
-
-const PIPELINE_STAGES = [
-  { id: "UPLOAD", label: "Upload Complete" },
-  { id: "AUDIO_EXTRACTION", label: "Extracting Audio" },
-  { id: "TRANSCRIPTION", label: "Transcribing" },
-  { id: "ANALYSIS", label: "Analyzing Virality" },
-  { id: "CLIPPING", label: "Finding Viral Moments & Clipping" },
-  { id: "REFRAMING", label: "Reframing to Vertical" },
-  { id: "COMPLETED", label: "Processing Complete" }
-];
-
-function PipelineProgress({ video, statusData }) {
-  let currentStage = video.status; 
-  
-  if (statusData?.steps) {
-    for (let i = PIPELINE_STAGES.length - 1; i >= 0; i--) {
-      const stageId = PIPELINE_STAGES[i].id;
-      if (statusData.steps[stageId]) {
-        currentStage = stageId;
-        break;
-      }
-    }
-  }
-
-  const isFailed = video.status === "FAILED" || statusData?.status === "failed";
-  const isCompleted = video.status === "COMPLETED" || statusData?.status === "completed";
-
-  const getStageIndex = (stage) => {
-    if (isCompleted) return PIPELINE_STAGES.length - 1;
-    const idx = PIPELINE_STAGES.findIndex(s => s.id === stage);
-    return idx === -1 ? 0 : idx;
-  };
-
-  const currentIndex = getStageIndex(currentStage);
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-panel rounded-2xl p-8 max-w-3xl mx-auto mt-8"
-    >
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-xl font-semibold">Processing: {video.originalFilename}</h2>
-          <p className="text-sm text-zinc-400 mt-1">Our AI is currently working its magic.</p>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {PIPELINE_STAGES.map((stage, idx) => {
-          const isActive = idx === currentIndex && !isCompleted && !isFailed;
-          const isDone = idx < currentIndex || isCompleted;
-
-          return (
-            <div key={stage.id} className={cn("flex items-center gap-4 transition-opacity duration-300", 
-              (isDone || isActive) ? "opacity-100" : "opacity-40"
-            )}>
-              <div className="relative">
-                {isDone ? (
-                  <CheckCircle2 size={24} className="text-emerald-500" />
-                ) : isActive ? (
-                  <Loader2 size={24} className="text-blue-500 animate-spin" />
-                ) : (
-                  <Circle size={24} className="text-zinc-600" />
-                )}
-                {/* Connecting line */}
-                {idx !== PIPELINE_STAGES.length - 1 && (
-                  <div className={cn(
-                    "absolute top-6 left-1/2 -translate-x-1/2 w-[2px] h-6",
-                    isDone ? "bg-emerald-500/50" : "bg-white/[0.05]"
-                  )} />
-                )}
-              </div>
-              <div>
-                <p className={cn("font-medium", isDone ? "text-emerald-400" : isActive ? "text-white" : "text-zinc-500")}>
-                  {stage.label}
-                </p>
-                {isActive && (
-                  <p className="text-xs text-blue-400 mt-1 animate-pulse">In progress...</p>
-                )}
-                {isDone && statusData?.steps?.[stage.id]?.elapsedMs && (
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Took {(statusData.steps[stage.id].elapsedMs / 1000).toFixed(1)}s
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {isFailed && (
-        <div className="mt-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-red-400 text-sm font-medium">Processing failed. Please check backend logs or try again.</p>
-        </div>
-      )}
-    </motion.div>
-  );
-}
 
 export default function Home() {
-  const { videos, pollStatus, processingStatuses, fetchVideos } = useVideoStore();
-  const [latestVideoId, setLatestVideoId] = useState(null);
-  
+  const { videos, fetchVideos } = useVideoStore();
   const [recentClips, setRecentClips] = useState([]);
   const [isLoadingClips, setIsLoadingClips] = useState(true);
 
-  // Fetch initial videos
   useEffect(() => {
     fetchVideos();
-    const interval = setInterval(() => fetchVideos(), 5000);
-    return () => clearInterval(interval);
   }, [fetchVideos]);
 
-  // Fetch initial clips
   useEffect(() => {
     const loadClips = async () => {
       try {
-        const res = await clipService.listRecent(15);
+        const res = await clipService.listRecent(8);
         if (res.clips) setRecentClips(res.clips);
       } catch (e) {
         console.error("Failed to load clips", e);
@@ -135,173 +31,154 @@ export default function Home() {
       }
     };
     loadClips();
-    
-    // Refresh clips periodically
-    const interval = setInterval(loadClips, 5000);
-    return () => clearInterval(interval);
   }, []);
 
-  // Set latest processing video automatically
-  useEffect(() => {
-    if (!latestVideoId && videos.length > 0) {
-      const activeVideo = videos.find(v => ["QUEUED", "PROCESSING"].includes(v.status));
-      if (activeVideo) {
-        setLatestVideoId(activeVideo.id);
-      }
-    }
-  }, [videos, latestVideoId]);
-
-  const latestVideo = videos.find(v => v.id === latestVideoId);
-  const isProcessing = latestVideo && ["QUEUED", "PROCESSING"].includes(latestVideo.status);
-  const showPipeline = latestVideo && ["QUEUED", "PROCESSING", "COMPLETED", "FAILED"].includes(latestVideo.status);
-
-  // Poll status if processing
-  useEffect(() => {
-    let interval;
-    if (isProcessing) {
-      pollStatus(latestVideoId);
-      interval = setInterval(() => pollStatus(latestVideoId), 3000);
-    }
-    return () => clearInterval(interval);
-  }, [isProcessing, latestVideoId, pollStatus]);
+  const totalVideos = videos.length;
+  const totalClips = recentClips.length;
+  const avgScore = totalClips > 0
+    ? Math.round(recentClips.reduce((sum, c) => sum + (c.viralScore || 0), 0) / totalClips)
+    : 0;
+  const processingCount = videos.filter((v) => v.status === "PROCESSING").length;
+  const topClips = [...recentClips].sort((a, b) => b.viralScore - a.viralScore).slice(0, 5);
 
   return (
-    <div className="max-w-6xl mx-auto py-8 space-y-16">
-      
-      {/* 1. Upload & Processing Section */}
-      <section>
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold tracking-tight mb-3">ClipForge AI Studio</h1>
-          <p className="text-zinc-400 text-lg">Upload your long-form video and let our AI extract the most engaging moments automatically.</p>
+    <div className="space-y-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+          <p className="text-sm text-text-muted mt-1">Here's what's happening with your clips today.</p>
         </div>
+        <div className="flex items-center gap-3">
+          <Link to="/clips">
+            <Button variant="secondary" icon={Film}>All Clips</Button>
+          </Link>
+          <Link to="/upload">
+            <Button variant="accent" icon={Upload}>Upload Video</Button>
+          </Link>
+        </div>
+      </motion.div>
 
-        {!showPipeline ? (
-          <DropzoneUploader onUploadSuccess={(videoId) => setLatestVideoId(videoId)} />
-        ) : (
-          <>
-            <div className="text-center mb-8">
-              <button 
-                onClick={() => setLatestVideoId(null)}
-                className="btn btn-secondary"
-              >
-                Upload another video
-              </button>
-            </div>
-            <PipelineProgress 
-              video={latestVideo} 
-              statusData={processingStatuses[latestVideoId]} 
-            />
-          </>
-        )}
-      </section>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard icon={Film} label="Total Videos" value={totalVideos} subtitle="Uploaded" />
+        <KPICard icon={Scissors} label="Total Clips" value={totalClips} subtitle="Generated" />
+        <KPICard icon={Zap} label="Avg Score" value={avgScore || "—"} subtitle="Viral potential" />
+        <KPICard
+          icon={Activity}
+          label="Queue"
+          value={processingCount}
+          subtitle={processingCount > 0 ? "In progress" : "All done"}
+        />
+      </div>
 
-      {/* 2. Recent Clips Section */}
+      {/* Processing Banner */}
+      {processingCount > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-panel-solid rounded-xl p-4 flex items-center gap-4 border-accent/30"
+          style={{ borderColor: "rgba(59, 130, 246, 0.3)" }}
+        >
+          <div className="w-10 h-10 rounded-lg bg-accent-muted flex items-center justify-center shrink-0">
+            <Activity size={18} className="text-accent animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-text-primary">
+              {processingCount} video{processingCount > 1 ? "s" : ""} being processed
+            </p>
+            <p className="text-xs text-text-muted mt-0.5">AI is extracting viral clips. Check the Upload page for details.</p>
+          </div>
+          <Link to="/upload">
+            <Button variant="secondary" size="sm" iconRight={ArrowRight}>View</Button>
+          </Link>
+        </motion.div>
+      )}
+
+      {/* Top Clips */}
       <section>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <Zap className="text-yellow-500" size={24}/> Your Viral Clips
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Zap size={18} className="text-yellow-500" /> Top Clips
           </h2>
+          {recentClips.length > 0 && (
+            <Link to="/clips" className="text-xs text-text-muted hover:text-text-primary transition-colors flex items-center gap-1">
+              View all <ArrowRight size={12} />
+            </Link>
+          )}
         </div>
-        
+
         {isLoadingClips ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="aspect-[9/16] bg-white/[0.02] border border-white/[0.05] rounded-xl animate-pulse"></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => <SkeletonClipCard key={i} />)}
+          </div>
+        ) : topClips.length === 0 ? (
+          <EmptyState
+            icon={Film}
+            title="No clips yet"
+            description="Upload your first video to start generating viral clips."
+            action={
+              <Link to="/upload">
+                <Button variant="accent" icon={Upload}>Upload Video</Button>
+              </Link>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {topClips.map((clip) => (
+              <ClipCard key={clip.id} clip={clip} />
             ))}
           </div>
-        ) : recentClips.length === 0 ? (
-          <div className="glass-panel rounded-xl p-12 text-center flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-4">
-              <Film size={24} className="text-zinc-500" />
-            </div>
-            <h3 className="text-lg font-medium text-zinc-200">No clips yet</h3>
-            <p className="text-sm text-zinc-500 mt-1 max-w-sm">Upload a video above to start extracting highly engaging vertical clips automatically.</p>
-          </div>
-        ) : (
-          <div className="space-y-12">
-            {(() => {
-              const sortedClips = [...recentClips].sort((a, b) => b.viralScore - a.viralScore);
-              const bestClip = sortedClips[0];
-              const otherClips = sortedClips.slice(1);
-
-              return (
-                <>
-                  {/* Best Clip Featured Section */}
-                  <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                      <Zap size={120} />
-                    </div>
-                    
-                    <div className="w-full md:w-1/3 aspect-[9/16] rounded-xl overflow-hidden bg-black relative border border-yellow-500/30 shadow-2xl shadow-yellow-500/10 shrink-0 z-10">
-                      <div className="absolute top-4 right-4 bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg z-20">
-                        <Zap size={16} fill="black" /> Best Clip ({bestClip.viralScore})
-                      </div>
-                      <video 
-                        src={`/api/clips/${bestClip.id}/download`} 
-                        controls 
-                        className="w-full h-full object-cover z-10 relative"
-                        poster={`/api/clips/${bestClip.id}/thumbnail`}
-                      />
-                    </div>
-                    
-                    <div className="w-full md:w-2/3 space-y-6 z-10">
-                      <div>
-                        <h3 className="text-3xl font-bold text-white mb-2">{bestClip.title || "Viral Moment"}</h3>
-                        <p className="text-zinc-400">Duration: {Math.round(bestClip.duration)}s</p>
-                      </div>
-                      
-                      <div className="bg-black/40 border border-white/10 rounded-xl p-6 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                        <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                          <CheckCircle2 size={16} className="text-emerald-500" />
-                          Generated Hook
-                        </h4>
-                        <p className="text-xl md:text-2xl font-medium text-emerald-400 italic leading-relaxed">
-                          "{bestClip.hook || "No hook generated"}"
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Other Clips Grid */}
-                  {otherClips.length > 0 && (
-                    <div>
-                      <h3 className="text-xl font-semibold mb-6 flex items-center gap-2 text-zinc-200">
-                        Other Viral Moments
-                      </h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {otherClips.map((clip) => (
-                          <div key={clip.id} className="group relative aspect-[9/16] rounded-xl overflow-hidden bg-black border border-white/[0.1] hover:border-white/[0.3] transition-all">
-                            {/* Simple generic poster for other clips to save bandwidth */}
-                            <video 
-                              src={`/api/clips/${clip.id}/download`} 
-                              className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
-                              muted
-                              onMouseEnter={(e) => e.target.play().catch(()=>{})}
-                              onMouseLeave={(e) => { e.target.pause(); e.target.currentTime = 0; }}
-                            />
-                            
-                            {/* Viral Score Badge */}
-                            <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/10 flex items-center gap-1">
-                              <Zap size={12} className="text-yellow-400" fill="currentColor" />
-                              <span className="text-xs font-bold text-white">{clip.viralScore}</span>
-                            </div>
-
-                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
-                              <p className="text-sm font-semibold text-white line-clamp-2">{clip.title}</p>
-                              <p className="text-[10px] text-zinc-400 mt-1">{Math.round(clip.duration)}s</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
         )}
       </section>
+
+      {/* Recent Activity */}
+      {videos.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+          <div className="glass-panel-solid rounded-xl divide-y divide-border">
+            {videos.slice(0, 5).map((video) => (
+              <div key={video.id} className="flex items-center gap-4 p-4">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  video.status === "COMPLETED" ? "bg-success-muted" :
+                  video.status === "PROCESSING" ? "bg-accent-muted" :
+                  video.status === "FAILED" ? "bg-danger-muted" :
+                  "bg-white/[0.04]"
+                }`}>
+                  {video.status === "COMPLETED" ? (
+                    <CheckCircle2 size={14} className="text-success" />
+                  ) : video.status === "PROCESSING" ? (
+                    <Activity size={14} className="text-accent animate-pulse" />
+                  ) : (
+                    <Film size={14} className="text-text-muted" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary truncate">{video.originalFilename}</p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    {video.status === "COMPLETED" ? "Processing complete" :
+                     video.status === "PROCESSING" ? "Processing..." :
+                     video.status === "FAILED" ? "Processing failed" :
+                     "Queued"}
+                  </p>
+                </div>
+                <span className={`badge ${
+                  video.status === "COMPLETED" ? "bg-success-muted text-success" :
+                  video.status === "PROCESSING" ? "bg-accent-muted text-accent" :
+                  video.status === "FAILED" ? "bg-danger-muted text-danger" :
+                  "bg-white/[0.06] text-text-muted"
+                }`}>
+                  {video.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

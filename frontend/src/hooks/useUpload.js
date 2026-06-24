@@ -7,7 +7,7 @@ import { SUPPORTED_VIDEO_FORMATS, MAX_UPLOAD_SIZE_BYTES } from "@/constants/plat
  * Hook to handle video upload with validation.
  */
 export default function useUpload() {
-  const { uploadVideo, uploadLocalVideo, isUploading, uploadProgress } = useVideoStore();
+  const { uploadVideo, uploadLocalVideo, uploadYouTubeVideo, isUploading, uploadProgress } = useVideoStore();
   const [validationError, setValidationError] = useState(null);
   const [desiredClipCount, setDesiredClipCount] = useState(5);
 
@@ -58,5 +58,27 @@ export default function useUpload() {
     }
   }, [uploadLocalVideo, desiredClipCount]);
 
-  return { upload, uploadLocalPath, isUploading, uploadProgress, validationError, desiredClipCount, setDesiredClipCount };
+  const uploadYouTube = useCallback(async (urlsText) => {
+    if (!urlsText || !urlsText.trim()) {
+      setValidationError("Please provide at least one YouTube URL");
+      return null;
+    }
+    const urls = urlsText.split("\n").map(u => u.trim()).filter(Boolean);
+    if (urls.length === 0) {
+      setValidationError("Please provide valid URLs");
+      return null;
+    }
+
+    setValidationError(null);
+    try {
+      const result = await uploadYouTubeVideo(urls, desiredClipCount);
+      toast.success(`${urls.length} YouTube videos queued for processing!`);
+      return result;
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to queue YouTube videos");
+      return null;
+    }
+  }, [uploadYouTubeVideo, desiredClipCount]);
+
+  return { upload, uploadLocalPath, uploadYouTube, isUploading, uploadProgress, validationError, desiredClipCount, setDesiredClipCount };
 }

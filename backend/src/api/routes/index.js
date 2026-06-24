@@ -4,6 +4,7 @@ import videoRoutes from "./video.routes.js";
 import clipRoutes from "./clip.routes.js";
 import analyticsRoutes from "./analytics.routes.js";
 import settingsRoutes from "./settings.routes.js";
+import monitorRoutes from "./monitor.routes.js";
 
 const router = Router();
 
@@ -12,6 +13,7 @@ router.use("/videos", videoRoutes);
 router.use("/clips", clipRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/settings", settingsRoutes);
+router.use("/monitor", monitorRoutes);
 
 // Health check
 router.get("/health", (req, res) => {

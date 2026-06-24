@@ -65,6 +65,20 @@ const useVideoStore = create((set, get) => ({
     }
   },
 
+  /** Upload YouTube URLs */
+  uploadYouTubeVideo: async (urls, desiredClipCount) => {
+    set({ isUploading: true, uploadProgress: 50 });
+    try {
+      const result = await videoService.uploadYouTube(urls, desiredClipCount);
+      set({ isUploading: false, uploadProgress: 100 });
+      get().fetchVideos();
+      return result;
+    } catch (err) {
+      set({ isUploading: false, uploadProgress: 0 });
+      throw err;
+    }
+  },
+
   /** Poll processing status for a video */
   pollStatus: async (videoId) => {
     try {

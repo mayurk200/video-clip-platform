@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Upload, Film, BarChart3, Settings,
-  ChevronsLeft, ChevronsRight, Activity, Zap, Scissors
+  ChevronsLeft, ChevronsRight, Activity, Zap, Scissors, Terminal
 } from "lucide-react";
 import useUIStore from "@/store/uiSlice";
 import useVideoStore from "@/store/videoSlice";
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: "/upload", icon: Upload, label: "Upload" },
   { to: "/clips", icon: Film, label: "My Clips" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
+  { to: "/monitor", icon: Terminal, label: "Monitor" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 

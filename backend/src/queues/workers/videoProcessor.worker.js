@@ -1,10 +1,12 @@
 import videoService from "../../services/video.service.js";
 import clipService from "../../services/clip.service.js";
 import processingService from "../../services/processing.service.js";
+import downloadService from "../../services/download.service.js";
 import db from "../../config/database.js";
 import logger from "../../utils/logger.js";
 import fs from "fs";
 import path from "path";
+import storage from "../../config/storage.js";
 
 /** Track step start times for elapsed calculation */
 const stepTimers = {};
@@ -47,32 +49,57 @@ function fmtMs(ms) {
  * - Logs step durations
  */
 export async function processVideo(jobData) {
-  const { videoId, videoPath } = jobData;
+  let { videoId, videoPath, sourceUrl } = jobData;
   logger.info(`▶ Starting video processing: ${videoId}`);
 
-  // ── Pre-flight checks ──────────────────────────────────────
-  // 1. Verify video file exists on disk
-  if (!fs.existsSync(videoPath)) {
-    const msg = `Video file not found on disk: ${videoPath}`;
-    logger.error(msg);
-    await videoService.updateStatus(videoId, "FAILED", msg);
-    throw new Error(msg);
-  }
-
-  // 2. Health-check the Python AI service
-  try {
-    await processingService.healthCheck();
-  } catch (err) {
-    const msg = `AI service is unreachable (http://localhost:8000). Cannot process video.`;
-    logger.error(msg);
-    await videoService.updateStatus(videoId, "FAILED", msg);
-    throw new Error(msg);
-  }
-
-  // ── Processing pipeline ────────────────────────────────────
-  let currentStep = "transcription";
+  let currentStep = "downloading";
+  const t0 = Date.now();
 
   try {
+    // ── Step 0: Download YouTube (if applicable) ───────────────
+    if (sourceUrl && !videoPath) {
+      currentStep = "downloading";
+      await videoService.updateStatus(videoId, "DOWNLOADING");
+      await updateJobStep(videoId, "downloading", "processing");
+      logger.info(`  Step 0: Downloading YouTube video...`);
+      const tD = Date.now();
+      
+      const folderName = `youtube_${videoId.substring(0, 8)}`;
+      const videoDir = path.join(storage.root, folderName);
+      const originalDir = path.join(videoDir, "original");
+      const clipsDir = path.join(videoDir, "clips");
+      await fs.promises.mkdir(originalDir, { recursive: true });
+      await fs.promises.mkdir(clipsDir, { recursive: true });
+
+      try {
+        const metadata = await downloadService.getMetadata(sourceUrl);
+        if (metadata && metadata.title) {
+          db.videos.updateOne({ id: videoId }, { originalName: metadata.title, duration: metadata.duration });
+        }
+      } catch (e) {
+        logger.warn("Could not fetch metadata, proceeding with generic name");
+      }
+
+      videoPath = await downloadService.downloadVideo(sourceUrl, originalDir, "video.mp4");
+      
+      const stats = await fs.promises.stat(videoPath);
+      db.videos.updateOne({ id: videoId }, { filePath: videoPath, fileSize: stats.size });
+
+      await updateJobStep(videoId, "downloading", "completed");
+      logger.info(`  Step 0: Download done (${fmtMs(Date.now() - tD)})`);
+    }
+
+    // ── Pre-flight checks ──────────────────────────────────────
+    if (!fs.existsSync(videoPath)) {
+      throw new Error(`Video file not found on disk: ${videoPath}`);
+    }
+
+    try {
+      await processingService.healthCheck();
+    } catch (err) {
+      throw new Error(`AI service is unreachable (http://localhost:8000). Cannot process video.`);
+    }
+
     // Step 1: Transcribe
     currentStep = "transcription";
     await videoService.updateStatus(videoId, "TRANSCRIBING");

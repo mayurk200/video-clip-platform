@@ -2,7 +2,7 @@ import db from "../config/database.js";
 import { safeDelete } from "../utils/fileUtils.js";
 import logger from "../utils/logger.js";
 
-const PROCESSING_STATUSES = ["TRANSCRIBING", "ANALYZING", "CLIPPING", "RENDERING"];
+const PROCESSING_STATUSES = ["PREPARING", "DOWNLOADING", "TRANSCRIBING", "ANALYZING", "CLIPPING", "RENDERING"];
 
 /**
  * Video service — CRUD, status tracking, retry logic.
@@ -17,9 +17,27 @@ const videoService = {
       fileSize: fileData.size,
       mimeType: fileData.mimetype,
       desiredClipCount: desiredClipCount,
+      sourceType: "upload",
       status: "QUEUED",
     });
     logger.info(`Video created: ${video.id}`, { userId, filename: fileData.originalname, desiredClipCount });
+    return video;
+  },
+
+  async createFromYouTube(userId, url, desiredClipCount = null) {
+    const video = db.videos.insert({
+      userId,
+      filename: `youtube_${Date.now()}.mp4`,
+      originalName: url, // Use URL as name until metadata is fetched
+      filePath: null, // Will be set after download
+      fileSize: null,
+      mimeType: "video/mp4",
+      desiredClipCount: desiredClipCount,
+      sourceUrl: url,
+      sourceType: "youtube",
+      status: "QUEUED",
+    });
+    logger.info(`YouTube Video queued: ${video.id}`, { userId, url, desiredClipCount });
     return video;
   },
 
@@ -57,7 +75,7 @@ const videoService = {
     const video = db.videos.findOne({ id: videoId, userId });
     if (!video) throw Object.assign(new Error("Video not found"), { statusCode: 404 });
 
-    await safeDelete(video.filePath);
+    if (video.filePath) await safeDelete(video.filePath);
 
     // Clean up clips
     const clips = db.clips.findAll({ videoId });
@@ -138,33 +156,30 @@ const videoService = {
     };
   },
 
-  /** On startup: recover stuck jobs */
+  /** On startup: recover stuck jobs by re-queueing them */
   async recoverStuckJobs() {
     const stuckVideos = db.videos.findAll({ status: { in: PROCESSING_STATUSES } });
 
     if (stuckVideos.length === 0) return;
 
-    logger.warn(`Found ${stuckVideos.length} stuck video(s) from previous session. Marking as FAILED.`);
+    logger.warn(`Found ${stuckVideos.length} stuck video(s) from previous session. Re-queueing them.`);
     for (const video of stuckVideos) {
       db.videos.updateOne(
         { id: video.id },
         {
-          status: "FAILED",
-          errorMessage: "Server restarted during processing. Please retry.",
+          status: "QUEUED",
+          errorMessage: null,
         }
       );
 
-      // Mark any active processing steps as failed too
+      // Clean up incomplete jobs so they start fresh
       const jobs = db.processingJobs.findAll({ videoId: video.id });
       for (const job of jobs) {
         if (job.status === "processing") {
-          db.processingJobs.updateOne(
-            { id: job.id },
-            { status: "failed", error: "Server restarted", completedAt: new Date().toISOString() }
-          );
+          db.processingJobs.deleteOne({ id: job.id });
         }
       }
-      logger.info(`  Marked stuck video as FAILED: ${video.id}`);
+      logger.info(`  Re-queued stuck video: ${video.id}`);
     }
   },
 };

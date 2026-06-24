@@ -1,5 +1,5 @@
 import videoService from "../services/video.service.js";
-import { addVideoProcessingJob, isProcessing } from "../queues/videoProcessing.queue.js";
+import { addVideoProcessingJob, isProcessing } from "../queues/queue.manager.js";
 import { successResponse, errorResponse } from "../utils/responseHelper.js";
 import fs from "fs/promises";
 import path from "path";
@@ -11,8 +11,27 @@ export async function upload(req, res, next) {
     if (!req.file) return errorResponse(res, "No video file provided", 400);
     const desiredClipCount = parseInt(req.body.desiredClipCount) || null;
     const video = await videoService.create(req.user.id, req.file, desiredClipCount);
-    await addVideoProcessingJob(video.id, video.filePath);
+    await addVideoProcessingJob(video.id);
     return successResponse(res, { video }, "Video uploaded and queued for processing", 201);
+  } catch (err) { next(err); }
+}
+
+export async function uploadYouTube(req, res, next) {
+  try {
+    const { urls } = req.body;
+    if (!urls || !Array.isArray(urls) || urls.length === 0) {
+      return errorResponse(res, "Please provide an array of YouTube URLs", 400);
+    }
+    const desiredClipCount = parseInt(req.body.desiredClipCount) || null;
+    
+    const queuedVideos = [];
+    for (const url of urls) {
+      const video = await videoService.createFromYouTube(req.user.id, url, desiredClipCount);
+      await addVideoProcessingJob(video.id);
+      queuedVideos.push(video);
+    }
+    
+    return successResponse(res, { videos: queuedVideos }, `${queuedVideos.length} YouTube videos queued for processing`, 201);
   } catch (err) { next(err); }
 }
 
@@ -63,7 +82,7 @@ export async function retryVideo(req, res, next) {
     }
 
     const video = await videoService.resetForRetry(videoId);
-    await addVideoProcessingJob(video.id, video.filePath);
+    await addVideoProcessingJob(video.id);
     return successResponse(res, { video }, "Video re-queued for processing");
   } catch (err) { next(err); }
 }
@@ -116,7 +135,7 @@ export async function uploadLocal(req, res, next) {
 
     const desiredClipCount = parseInt(req.body.desiredClipCount) || null;
     const video = await videoService.create(req.user.id, fileData, desiredClipCount);
-    await addVideoProcessingJob(video.id, video.filePath);
+    await addVideoProcessingJob(video.id);
     return successResponse(res, { video }, "Local video copied and queued", 201);
   } catch (err) {
     if (err.code === "ENOENT") return errorResponse(res, "Local file not found", 404);

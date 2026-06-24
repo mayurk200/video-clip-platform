@@ -11,6 +11,7 @@ import Clips from "@/pages/Clips";
 import ClipDetail from "@/pages/ClipDetail";
 import Analytics from "@/pages/Analytics";
 import SettingsPage from "@/pages/Settings";
+import Monitor from "@/pages/Monitor";
 import NotFound from "@/pages/NotFound";
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/clips/:id" element={<ClipDetail />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/monitor" element={<Monitor />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

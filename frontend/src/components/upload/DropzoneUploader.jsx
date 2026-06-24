@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Film, AlertCircle, Scissors, File, Loader2 } from "lucide-react";
+import { Upload, Film, AlertCircle, Scissors, File, Loader2, Youtube } from "lucide-react";
 import useUpload from "@/hooks/useUpload";
 import { formatFileSize } from "@/lib/utils";
 
@@ -99,12 +99,56 @@ function LocalPathInput({ onSubmit, disabled }) {
 }
 
 /**
+ * Refined YouTube URLs input.
+ */
+function YouTubeUrlInput({ onSubmit, disabled }) {
+  const [urlsText, setUrlsText] = useState("");
+
+  const handleSubmit = () => {
+    if (urlsText.trim()) {
+      onSubmit(urlsText.trim());
+      setUrlsText("");
+    }
+  };
+
+  return (
+    <div className="mt-8 pt-6 border-t border-white/[0.05]">
+      <div className="flex items-center gap-2 mb-3">
+        <Youtube size={14} className="text-zinc-500" />
+        <span className="text-xs text-zinc-400 font-medium">YouTube URLs (Batch)</span>
+      </div>
+      <div className="flex flex-col gap-3">
+        <textarea
+          value={urlsText}
+          onChange={(e) => setUrlsText(e.target.value)}
+          placeholder="Paste YouTube URLs here (one per line)..."
+          className="w-full bg-white/[0.02] border border-white/[0.08] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-red-500/50 focus:bg-white/[0.04] text-zinc-200 placeholder:text-zinc-600 transition-all font-mono min-h-[80px] resize-y"
+          disabled={disabled}
+        />
+        <div className="flex justify-end">
+          <button
+            className="btn btn-primary bg-red-600 hover:bg-red-700 text-white border-none"
+            disabled={disabled || !urlsText.trim()}
+            onClick={handleSubmit}
+          >
+            {disabled ? <Loader2 size={16} className="animate-spin mr-2 inline" /> : null}
+            {disabled ? "Queueing..." : "Process YouTube Links"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/**
  * Ultra-premium Dropzone with Vercel aesthetic.
  */
 export default function DropzoneUploader({ onUploadSuccess }) {
   const {
     upload,
     uploadLocalPath,
+    uploadYouTube,
     isUploading,
     uploadProgress,
     validationError,
@@ -131,6 +175,14 @@ export default function DropzoneUploader({ onUploadSuccess }) {
   const handleLocalSubmit = async (path) => {
     const result = await uploadLocalPath(path);
     handleUploadSuccess(result);
+  };
+
+  const handleYouTubeSubmit = async (urls) => {
+    const result = await uploadYouTube(urls);
+    // For batch youtube uploads, result is { videos: [...] }
+    if (result?.videos && result.videos.length > 0) {
+      handleUploadSuccess({ video: result.videos[0] });
+    }
   };
 
   const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
@@ -244,6 +296,7 @@ export default function DropzoneUploader({ onUploadSuccess }) {
         )}
       </AnimatePresence>
 
+      <YouTubeUrlInput onSubmit={handleYouTubeSubmit} disabled={isUploading} />
       <LocalPathInput onSubmit={handleLocalSubmit} disabled={isUploading} />
     </div>
   );

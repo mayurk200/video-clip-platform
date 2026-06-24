@@ -26,6 +26,11 @@ const videoService = {
     return data;
   },
 
+  async uploadYouTube(urls, desiredClipCount) {
+    const { data } = await api.post("/videos/youtube", { urls, desiredClipCount });
+    return data;
+  },
+
   async list(page = 1, limit = 20) {
     const { data } = await api.get("/videos", { params: { page, limit } });
     return data;
